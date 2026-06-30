@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  owner
+  barber
+  admin
+}
+
+enum EntityStatus {
+  draft
+  active
+}
+
+enum ServiceType {
+  haircut
+  beard
+  shave
+  kids
+  styling
+}
+
+enum MembershipStatus {
+  pending
+  confirmed
+  rejected
+}
+
+enum MembershipInitiator {
+  owner
+  barber
+}
+
+enum BookingStatus {
+  pending
+  accepted
+  rejected
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime    @default(now())
+  shop         BarberShop?
+  barber       Barber?
+}
+
+/// Binary image storage in DB (interim; swap for R2 later).
+model Image {
+  id        String   @id @default(cuid())
+  data      Bytes
+  mimeType  String
+  createdAt DateTime @default(now())
+}
+
+model BarberShop {
+  id           String        @id @default(cuid())
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId      String        @unique
+  name         String
+  slug         String        @unique
+  description  String        @default("")
+  district     String        @default("")
+  address      String        @default("")
+  lat          Float?
+  lng          Float?
+  imageId      String?
+  coverImageId String?
+  imageUrl     String? // external fallback (used until an image is uploaded)
+  coverImageUrl String?
+  services     ServiceType[]
+  rating       Float         @default(5)
+  status       EntityStatus  @default(active)
+  createdAt    DateTime      @default(now())
+  memberships  Membership[]
+}
+
+model Barber {
+  id               String            @id @default(cuid())
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String            @unique
+  firstName        String
+  lastName         String
+  phone            String            @default("")
+  yearsExperience  Int               @default(0)
+  specialty        String            @default("")
+  photoId          String?
+  photoUrl         String? // external fallback
+  status           EntityStatus      @default(active)
+  createdAt        DateTime          @default(now())
+  memberships      Membership[]
+  certificates     Certificate[]
+  workingHours     WorkingHours[]
+  serviceDurations ServiceDuration[]
+  bookings         Booking[]
+  timeBlocks       TimeBlock[]
+}
+
+model Membership {
+  id          String              @id @default(cuid())
+  barber      Barber              @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId    String
+  shop        BarberShop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId      String
+  status      MembershipStatus    @default(pending)
+  initiatedBy MembershipInitiator
+  createdAt   DateTime            @default(now())
+
+  @@unique([barberId, shopId])
+}
+
+model Certificate {
+  id       String @id @default(cuid())
+  barber   Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId String
+  title    String
+  issuer   String @default("")
+  year     Int
+  imageId  String?
+  imageUrl String?
+}
+
+model WorkingHours {
+  id          String  @id @default(cuid())
+  barber      Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId    String
+  dayOfWeek   Int
+  startMinute Int
+  endMinute   Int
+  enabled     Boolean @default(true)
+
+  @@unique([barberId, dayOfWeek])
+}
+
+model ServiceDuration {
+  id       String      @id @default(cuid())
+  barber   Barber      @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId String
+  service  ServiceType
+  minutes  Int
+
+  @@unique([barberId, service])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  barber          Barber        @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId        String
+  services        ServiceType[]
+  startsAt        DateTime
+  durationMinutes Int
+  clientName      String
+  clientPhone     String
+  status          BookingStatus @default(pending)
+  createdByBarber Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([barberId, startsAt])
+}
+
+/// Temporary closure — barber blocks a time range (e.g. lunch, errand).
+model TimeBlock {
+  id              String   @id @default(cuid())
+  barber          Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId        String
+  startsAt        DateTime
+  durationMinutes Int
+  note            String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([barberId, startsAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  imageId   String?
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
