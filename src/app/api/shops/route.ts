@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { asServiceType, listShops } from "@/lib/data/queries";
+import { asServiceType } from "@/lib/shop-filters";
+import { listShops } from "@/lib/data/queries";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const { searchParams } = new URL(request.url);

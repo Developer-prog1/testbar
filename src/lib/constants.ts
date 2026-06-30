@@ -39,3 +39,14 @@ export const MIN_NAME_LENGTH = 2;
 
 export const SITE_NAME = "Lord & Blade";
 export const SITE_TAGLINE = "Արհեստավարժ barber shop-եր մեկ տեղում";
+
+/** Hero carousel background images (rotated on the home page). */
+export const HERO_IMAGES: readonly string[] = [
+  "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1920&h=1080&q=80",
+  "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?auto=format&fit=crop&w=1920&h=1080&q=80",
+  "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=1920&h=1080&q=80",
+  "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=1920&h=1080&q=80",
+];
+
+/** Hero carousel auto-advance interval (ms). */
+export const HERO_ROTATE_INTERVAL_MS = 5000;

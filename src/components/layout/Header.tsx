@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Container } from "@/components/ui/Container";
+import { NavLink, NavLogo } from "@/components/navigation/NavLink";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 
@@ -16,7 +16,14 @@ const NAV_LINKS = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    for (const link of NAV_LINKS) {
+      router.prefetch(link.href);
+    }
+  }, [router]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -24,22 +31,20 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-ink/80 backdrop-blur">
       <Container className="flex h-16 items-center justify-between">
-        <Link href="/" className="font-display text-xl font-semibold tracking-wide">
-          <span className="text-gold">L</span>ord <span className="text-gold">&</span> Blade
-        </Link>
+        <NavLogo className="relative font-display text-xl font-semibold tracking-wide" />
 
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
-            <Link
+            <NavLink
               key={link.href}
               href={link.href}
+              label={link.label}
               className={cn(
-                "text-sm tracking-wide transition-colors hover:text-gold",
+                "relative rounded-md px-1 py-0.5 text-sm tracking-wide transition-colors hover:text-gold",
                 isActive(link.href) ? "text-gold" : "text-muted",
               )}
-            >
-              {link.label}
-            </Link>
+              pendingClassName="rounded-md"
+            />
           ))}
         </nav>
 
@@ -63,17 +68,16 @@ export function Header() {
         <nav className="border-t border-line/70 bg-ink md:hidden">
           <Container className="flex flex-col py-2">
             {NAV_LINKS.map((link) => (
-              <Link
+              <NavLink
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
+                label={link.label}
+                onNavigate={() => setOpen(false)}
                 className={cn(
-                  "rounded-lg px-2 py-3 text-sm transition-colors hover:bg-panel",
+                  "relative rounded-lg px-2 py-3 text-sm transition-colors hover:bg-panel",
                   isActive(link.href) ? "text-gold" : "text-cream",
                 )}
-              >
-                {link.label}
-              </Link>
+              />
             ))}
           </Container>
         </nav>

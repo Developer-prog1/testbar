@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
 
 export interface DayHours {
   readonly dayOfWeek: number;
@@ -22,6 +22,7 @@ const DAY_LABELS: Record<number, string> = {
   0: "Կիրակի",
 };
 const DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const SAVE_KEY = "working-hours";
 
 const toTime = (minutes: number): string =>
   `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
@@ -32,9 +33,12 @@ const toMinutes = (time: string): number => {
 };
 
 export function WorkingHoursEditor({ initial }: { readonly initial: DayHours[] }) {
-  const router = useRouter();
+  const { run, isPending } = useDashboardAction();
   const [days, setDays] = useState(initial);
-  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setDays(initial);
+  }, [initial]);
 
   const update = (dayOfWeek: number, patch: Partial<DayHours>) =>
     setDays((prev) =>
@@ -43,15 +47,16 @@ export function WorkingHoursEditor({ initial }: { readonly initial: DayHours[] }
       ),
     );
 
-  const save = async () => {
-    setSaving(true);
-    await fetch("/api/dashboard/working-hours", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(days),
+  const save = () => {
+    void run(SAVE_KEY, {
+      action: async () =>
+        fetch("/api/dashboard/working-hours", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(days),
+        }),
+      isSuccess: (response) => response.ok,
     });
-    setSaving(false);
-    router.refresh();
   };
 
   const byDay = (d: number) => days.find((day) => day.dayOfWeek === d)!;
@@ -94,8 +99,12 @@ export function WorkingHoursEditor({ initial }: { readonly initial: DayHours[] }
         );
       })}
       <div>
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Պահպանում..." : "Պահպանել գրաֆիկը"}
+        <Button
+          onClick={save}
+          loading={isPending(SAVE_KEY)}
+          loadingLabel="Պահպանում..."
+        >
+          Պահպանել գրաֆիկը
         </Button>
       </div>
     </div>

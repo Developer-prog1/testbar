@@ -15,7 +15,7 @@ const barberInclude = {
 export async function listShops(
   filters: ShopFilters = {},
 ): Promise<readonly BarberShop[]> {
-  const where: Prisma.BarberShopWhereInput = {};
+  const where: Prisma.BarberShopWhereInput = { status: "active" };
   if (filters.district) where.district = filters.district;
   if (filters.service) where.services = { has: filters.service };
   if (filters.search) {
@@ -37,7 +37,7 @@ export async function getDistricts(): Promise<readonly string[]> {
   const rows = await prisma.barberShop.findMany({
     distinct: ["district"],
     select: { district: true },
-    where: { district: { not: "" } },
+    where: { district: { not: "" }, status: "active" },
     orderBy: { district: "asc" },
   });
   return rows.map((row) => row.district);
@@ -50,19 +50,16 @@ export async function getShopWithBarbers(
     where: { id },
     include: {
       memberships: {
-        where: { status: "confirmed" },
+        where: { status: "confirmed", barber: { status: "active" } },
         include: barberInclude,
         orderBy: { createdAt: "asc" },
       },
     },
   });
 
-  if (!shop) return null;
+  if (!shop || shop.status !== "active") return null;
   const barbers = shop.memberships.map((m) => mapBarber(m.barber, shop.id));
   return { ...mapShop(shop), barbers };
 }
 
-export const asServiceType = (value: string | undefined): ServiceType | undefined => {
-  const allowed: readonly string[] = ["haircut", "beard", "shave", "kids", "styling"];
-  return value && allowed.includes(value) ? (value as ServiceType) : undefined;
-};
+export { asServiceType } from "@/lib/shop-filters";

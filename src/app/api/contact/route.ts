@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
 import { contactSchema } from "@/lib/validation";
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -17,6 +18,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  // TODO: integrate Resend/email delivery (Phase 3). For now we accept it.
+  await prisma.contactMessage.create({ data: parsed.data });
   return NextResponse.json({ ok: true }, { status: 201 });
 }

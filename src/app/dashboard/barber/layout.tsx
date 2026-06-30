@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
+import { BarberDashboardShell } from "@/components/dashboard/barber/BarberDashboardShell";
 import type { NavItem } from "@/components/dashboard/Sidebar";
 
 const BARBER_NAV: readonly NavItem[] = [
@@ -10,23 +9,12 @@ const BARBER_NAV: readonly NavItem[] = [
   { href: "/dashboard/barber/account", label: "Հաշիվ" },
 ];
 
-export default async function BarberLayout({
+export default function BarberLayout({
   children,
 }: {
   readonly children: ReactNode;
 }) {
-  const user = await getCurrentUser();
-  const name = user?.barber
-    ? `${user.barber.firstName} ${user.barber.lastName}`.trim()
-    : "";
-
   return (
-    <DashboardShell
-      title="Վարսավիր"
-      subtitle={name || user?.email || ""}
-      items={BARBER_NAV}
-    >
-      {children}
-    </DashboardShell>
+    <BarberDashboardShell items={BARBER_NAV}>{children}</BarberDashboardShell>
   );
 }

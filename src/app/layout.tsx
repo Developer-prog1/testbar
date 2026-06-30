@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "@/app/globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { RoutePrefetcher } from "@/components/navigation/RoutePrefetcher";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -26,6 +28,9 @@ export default function RootLayout({
   return (
     <html lang="hy">
       <body className="flex min-h-screen flex-col">
+        <Suspense fallback={null}>
+          <RoutePrefetcher />
+        </Suspense>
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

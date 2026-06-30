@@ -29,7 +29,9 @@ export function LoginForm() {
       setError("Սխալ email կամ գաղտնաբառ:");
       return;
     }
-    router.push(params.get("next") ?? "/dashboard");
+    const data = (await res.json()) as { role?: string };
+    const fallback = data.role === "admin" ? "/admin" : "/dashboard";
+    router.push(params.get("next") ?? fallback);
     router.refresh();
   };
 

@@ -1,14 +1,20 @@
+import { AboutSection } from "@/components/home/AboutSection";
 import { Hero } from "@/components/home/Hero";
 import { ShopGallery } from "@/components/home/ShopGallery";
-import { AboutSection } from "@/components/home/AboutSection";
-import { listShops } from "@/lib/data/queries";
+import { getCachedHeroImages, getCachedShopsAll } from "@/lib/data/cached-queries";
+
+export const dynamic = "force-static";
+export const revalidate = 60;
 
 export default async function HomePage() {
-  const shops = await listShops();
+  const [images, shops] = await Promise.all([
+    getCachedHeroImages(),
+    getCachedShopsAll(),
+  ]);
 
   return (
     <>
-      <Hero />
+      <Hero images={images} />
       <ShopGallery shops={shops} />
       <AboutSection />
     </>

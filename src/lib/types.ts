@@ -1,5 +1,42 @@
 export type ServiceType = "haircut" | "beard" | "shave" | "kids" | "styling";
 
+export type EntityStatus = "draft" | "active";
+
+export interface AdminShopRow {
+  readonly id: string;
+  readonly name: string;
+  readonly imageUrl: string;
+  readonly district: string;
+  readonly address: string;
+  readonly status: EntityStatus;
+  readonly createdAt: string;
+}
+
+export interface AdminContactMessage {
+  readonly id: string;
+  readonly name: string;
+  readonly contact: string;
+  readonly message: string;
+  readonly createdAt: string;
+}
+
+export interface HeroSlideRow {
+  readonly id: string;
+  readonly imageUrl: string;
+  readonly sortOrder: number;
+}
+
+export interface AdminBarberRow {
+  readonly id: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly phone: string;
+  readonly email: string;
+  readonly photoUrl: string;
+  readonly status: EntityStatus;
+  readonly createdAt: string;
+}
+
 export interface BarberShop {
   readonly id: string;
   readonly name: string;

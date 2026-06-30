@@ -45,3 +45,12 @@ export const formatDateTime = (iso: string): string =>
     hour: "2-digit",
     minute: "2-digit",
   });
+
+export const formatDateTimeFull = (iso: string): string =>
+  new Date(iso).toLocaleString(LOCALE, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });

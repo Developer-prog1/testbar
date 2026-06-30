@@ -10,6 +10,12 @@ datasource db {
 enum Role {
   owner
   barber
+  admin
+}
+
+enum EntityStatus {
+  draft
+  active
 }
 
 enum ServiceType {
@@ -72,6 +78,7 @@ model BarberShop {
   coverImageUrl String?
   services     ServiceType[]
   rating       Float         @default(5)
+  status       EntityStatus  @default(active)
   createdAt    DateTime      @default(now())
   memberships  Membership[]
 }
@@ -82,16 +89,19 @@ model Barber {
   userId           String            @unique
   firstName        String
   lastName         String
+  phone            String            @default("")
   yearsExperience  Int               @default(0)
   specialty        String            @default("")
   photoId          String?
   photoUrl         String? // external fallback
+  status           EntityStatus      @default(active)
   createdAt        DateTime          @default(now())
   memberships      Membership[]
   certificates     Certificate[]
   workingHours     WorkingHours[]
   serviceDurations ServiceDuration[]
   bookings         Booking[]
+  timeBlocks       TimeBlock[]
 }
 
 model Membership {
@@ -154,4 +164,33 @@ model Booking {
   createdAt       DateTime      @default(now())
 
   @@index([barberId, startsAt])
+}
+
+/// Temporary closure — barber blocks a time range (e.g. lunch, errand).
+model TimeBlock {
+  id              String   @id @default(cuid())
+  barber          Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  barberId        String
+  startsAt        DateTime
+  durationMinutes Int
+  note            String   @default("")
+  createdAt       DateTime @default(now())
+
+  @@index([barberId, startsAt])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model HeroSlide {
+  id        String   @id @default(cuid())
+  imageId   String?
+  imageUrl  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }

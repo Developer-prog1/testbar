@@ -31,7 +31,8 @@ export async function verifySessionToken(
     const { payload } = await jwtVerify(token, getSecret());
     const userId = payload.userId;
     const role = payload.role;
-    if (typeof userId !== "string" || (role !== "owner" && role !== "barber")) {
+    const isRole = role === "owner" || role === "barber" || role === "admin";
+    if (typeof userId !== "string" || !isRole) {
       return null;
     }
     return { userId, role };

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { ImageUploader } from "@/components/dashboard/ImageUploader";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
 
 export interface CertificateDto {
   readonly id: string;
@@ -16,46 +16,82 @@ export interface CertificateDto {
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
+const ADD_KEY = "certificate-add";
 
 export function CertificatesManager({
   certificates,
 }: {
   readonly certificates: readonly CertificateDto[];
 }) {
-  const router = useRouter();
+  const { run, isPending } = useDashboardAction();
+  const [items, setItems] = useState(certificates);
   const [title, setTitle] = useState("");
   const [issuer, setIssuer] = useState("");
   const [year, setYear] = useState<number>(CURRENT_YEAR);
   const [imageId, setImageId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const add = async (event: React.FormEvent) => {
+  useEffect(() => {
+    setItems(certificates);
+  }, [certificates]);
+
+  const add = (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
-    const res = await fetch("/api/dashboard/certificates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, issuer, year, imageId }),
+
+    void run(ADD_KEY, {
+      action: async () =>
+        fetch("/api/dashboard/certificates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, issuer, year, imageId }),
+        }),
+      isSuccess: (response) => response.ok,
+      onSuccess: async (response) => {
+        const data = (await response.json()) as {
+          certificate: {
+            id: string;
+            title: string;
+            issuer: string;
+            year: number;
+            imageId: string | null;
+          };
+        };
+        const created: CertificateDto = {
+          id: data.certificate.id,
+          title: data.certificate.title,
+          issuer: data.certificate.issuer,
+          year: data.certificate.year,
+          imageSrc: data.certificate.imageId
+            ? `/api/images/${data.certificate.imageId}`
+            : "",
+        };
+        setItems((current) => [created, ...current]);
+        setTitle("");
+        setIssuer("");
+        setImageId(null);
+      },
+      onError: () => setError("Ստուգիր դաշտերը:"),
     });
-    if (!res.ok) return setError("Ստուգիր դաշտերը:");
-    setTitle("");
-    setIssuer("");
-    setImageId(null);
-    router.refresh();
   };
 
-  const remove = async (id: string) => {
-    const res = await fetch(`/api/dashboard/certificates/${id}`, {
-      method: "DELETE",
+  const remove = (id: string) => {
+    const previous = items;
+    setItems((current) => current.filter((item) => item.id !== id));
+
+    void run(`certificate-${id}`, {
+      action: async () =>
+        fetch(`/api/dashboard/certificates/${id}`, { method: "DELETE" }),
+      isSuccess: (response) => response.ok,
+      onError: () => setItems(previous),
     });
-    if (res.ok) router.refresh();
   };
 
   return (
     <div className="flex flex-col gap-5">
-      {certificates.length > 0 ? (
+      {items.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2">
-          {certificates.map((cert) => (
+          {items.map((cert) => (
             <div
               key={cert.id}
               className="flex gap-3 rounded-xl border border-line bg-ink-soft p-3"
@@ -75,9 +111,10 @@ export function CertificatesManager({
                 <button
                   type="button"
                   onClick={() => remove(cert.id)}
-                  className="mt-1 text-xs text-red-400 hover:underline"
+                  disabled={isPending(`certificate-${cert.id}`)}
+                  className="mt-1 text-xs text-red-400 hover:underline disabled:opacity-50"
                 >
-                  Հեռացնել
+                  {isPending(`certificate-${cert.id}`) ? "..." : "Հեռացնել"}
                 </button>
               </div>
             </div>
@@ -117,7 +154,13 @@ export function CertificatesManager({
         </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         <div>
-          <Button type="submit">Ավելացնել սերտիֆիկատ</Button>
+          <Button
+            type="submit"
+            loading={isPending(ADD_KEY)}
+            loadingLabel="Ավելացվում է..."
+          >
+            Ավելացնել սերտիֆիկատ
+          </Button>
         </div>
       </form>
     </div>

@@ -1,5 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import type { Role } from "@prisma/client";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
+
+const homeFor = (role: Role): string => {
+  if (role === "admin") return "/admin";
+  if (role === "owner") return "/dashboard/shop";
+  return "/dashboard/barber";
+};
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
@@ -13,21 +20,23 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(url);
   }
 
-  const home = session.role === "owner" ? "/dashboard/shop" : "/dashboard/barber";
+  const home = homeFor(session.role);
+  const redirectHome = () => NextResponse.redirect(new URL(home, request.url));
 
-  if (pathname === "/dashboard") {
-    return NextResponse.redirect(new URL(home, request.url));
+  if (pathname === "/dashboard") return redirectHome();
+  if (pathname.startsWith("/admin") && session.role !== "admin") {
+    return redirectHome();
   }
   if (pathname.startsWith("/dashboard/shop") && session.role !== "owner") {
-    return NextResponse.redirect(new URL(home, request.url));
+    return redirectHome();
   }
   if (pathname.startsWith("/dashboard/barber") && session.role !== "barber") {
-    return NextResponse.redirect(new URL(home, request.url));
+    return redirectHome();
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/admin/:path*"],
 };

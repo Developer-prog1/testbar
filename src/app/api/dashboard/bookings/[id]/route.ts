@@ -16,6 +16,27 @@ interface RouteContext {
   readonly params: Promise<{ readonly id: string }>;
 }
 
+export async function DELETE(
+  _request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  try {
+    const { barberId } = await requireBarber();
+    const { id } = await context.params;
+
+    const booking = await prisma.booking.findFirst({
+      where: { id, barberId },
+      select: { id: true },
+    });
+    if (!booking) throw new ApiError(404, "booking_not_found");
+
+    await prisma.booking.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
 export async function PATCH(
   request: Request,
   context: RouteContext,

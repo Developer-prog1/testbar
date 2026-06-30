@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import type { Barber, BarberShop, Role, User } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -25,7 +26,7 @@ export async function clearSession(): Promise<void> {
   store.delete(SESSION_COOKIE_NAME);
 }
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
@@ -37,7 +38,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     where: { id: session.userId },
     include: { shop: true, barber: true },
   });
-}
+});
 
 export async function requireUser(role?: Role): Promise<SessionUser> {
   const user = await getCurrentUser();

@@ -12,6 +12,7 @@ export function ShopCard({ shop }: ShopCardProps) {
   return (
     <Link
       href={`/products/${shop.id}`}
+      prefetch
       className="group flex flex-col overflow-hidden rounded-card border border-line bg-panel transition-colors hover:border-gold/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
     >
       <div className="relative aspect-[4/3] overflow-hidden">

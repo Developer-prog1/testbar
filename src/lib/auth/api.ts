@@ -35,6 +35,12 @@ export async function requireOwnerShop(): Promise<{
   return { user, shopId: user.shop.id };
 }
 
+export async function requireAdmin(): Promise<SessionUser> {
+  const user = await requireSession();
+  if (user.role !== "admin") throw new ApiError(403, "forbidden");
+  return user;
+}
+
 export async function requireBarber(): Promise<{
   user: SessionUser;
   barberId: string;

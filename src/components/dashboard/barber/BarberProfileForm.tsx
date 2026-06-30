@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { ImageUploader } from "@/components/dashboard/ImageUploader";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
 
 export interface BarberProfileDto {
   readonly firstName: string;
@@ -15,36 +15,38 @@ export interface BarberProfileDto {
   readonly photoSrc: string | null;
 }
 
+const SAVE_KEY = "barber-profile";
+
 export function BarberProfileForm({
   profile,
 }: {
   readonly profile: BarberProfileDto;
 }) {
-  const router = useRouter();
+  const { run, isPending } = useDashboardAction();
   const [form, setForm] = useState(profile);
-  const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof BarberProfileDto>(
     key: K,
     value: BarberProfileDto[K],
   ) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    setSaving(true);
-    await fetch("/api/dashboard/barber", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        specialty: form.specialty,
-        yearsExperience: form.yearsExperience,
-        photoId: form.photoId,
-      }),
+    void run(SAVE_KEY, {
+      action: async () =>
+        fetch("/api/dashboard/barber", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            firstName: form.firstName,
+            lastName: form.lastName,
+            specialty: form.specialty,
+            yearsExperience: form.yearsExperience,
+            photoId: form.photoId,
+          }),
+        }),
+      isSuccess: (response) => response.ok,
     });
-    setSaving(false);
-    router.refresh();
   };
 
   return (
@@ -82,8 +84,12 @@ export function BarberProfileForm({
         />
       </div>
       <div>
-        <Button type="submit" disabled={saving}>
-          {saving ? "Պահպանում..." : "Պահպանել"}
+        <Button
+          type="submit"
+          loading={isPending(SAVE_KEY)}
+          loadingLabel="Պահպանում..."
+        >
+          Պահպանել
         </Button>
       </div>
     </form>

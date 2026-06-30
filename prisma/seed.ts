@@ -146,8 +146,23 @@ async function clearDatabase(): Promise<void> {
   await prisma.membership.deleteMany();
   await prisma.barber.deleteMany();
   await prisma.barberShop.deleteMany();
+  await prisma.contactMessage.deleteMany();
+  await prisma.heroSlide.deleteMany();
   await prisma.user.deleteMany();
   await prisma.image.deleteMany();
+}
+
+const HERO_SEED_URLS = [
+  img("photo-1599351431202-1e0f0137899a", 1920, 1080),
+  img("photo-1585747860715-2ba37e788b70", 1920, 1080),
+  img("photo-1503951914875-452162b0f3f1", 1920, 1080),
+  img("photo-1622286342621-4bd786c2447c", 1920, 1080),
+] as const;
+
+async function seedHeroSlides(): Promise<void> {
+  await prisma.heroSlide.createMany({
+    data: HERO_SEED_URLS.map((imageUrl, sortOrder) => ({ imageUrl, sortOrder })),
+  });
 }
 
 async function createBarber(
@@ -209,6 +224,11 @@ async function main(): Promise<void> {
   await clearDatabase();
   const passwordHash = await hash(DEFAULT_PASSWORD);
 
+  await prisma.user.create({
+    data: { email: "admin@test.am", passwordHash, role: "admin" },
+  });
+  await seedHeroSlides();
+
   for (const [index, shop] of SHOPS.entries()) {
     const ownerEmail =
       index === 0 ? "owner@test.am" : `owner.${shop.slug}@demo.am`;
@@ -248,6 +268,7 @@ async function main(): Promise<void> {
   }
 
   console.log("\nSeed complete.");
+  console.log("Test admin:  admin@test.am  /  Password123!");
   console.log("Test owner:  owner@test.am  /  Password123!");
   console.log("Test barber: barber@test.am /  Password123!");
 }

@@ -1,31 +1,23 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { ShopFilters } from "@/components/products/ShopFilters";
-import { ShopCard } from "@/components/shop/ShopCard";
-import { asServiceType, getDistricts, listShops } from "@/lib/data/queries";
+import { ProductsView } from "@/components/products/ProductsView";
+import { ProductsContentSkeleton } from "@/components/products/ProductsContentSkeleton";
+import { getCachedDistricts, getCachedShopsAll } from "@/lib/data/cached-queries";
 
 export const metadata: Metadata = {
   title: "Խանութներ",
   description: "Ընտրիր barber shop-ը ֆիլտրերով՝ ըստ թաղամասի և ծառայության:",
 };
 
-interface ProductsPageProps {
-  readonly searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
+export const dynamic = "force-static";
+export const revalidate = 60;
 
-const asString = (value: string | string[] | undefined): string | undefined =>
-  Array.isArray(value) ? value[0] : value;
-
-export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const sp = await searchParams;
+export default async function ProductsPage() {
   const [shops, districts] = await Promise.all([
-    listShops({
-      district: asString(sp.district),
-      service: asServiceType(asString(sp.service)),
-      search: asString(sp.search),
-    }),
-    getDistricts(),
+    getCachedShopsAll(),
+    getCachedDistricts(),
   ]);
 
   return (
@@ -36,20 +28,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         description="Օգտագործիր ֆիլտրերը՝ ճիշտ վայրն ու ծառայությունը գտնելու համար:"
       />
 
-      <ShopFilters districts={districts} />
-
-      {shops.length === 0 ? (
-        <div className="rounded-card border border-dashed border-line bg-panel p-12 text-center">
-          <p className="text-cream">Արդյունք չի գտնվել:</p>
-          <p className="mt-1 text-sm text-muted">Փորձիր փոխել ֆիլտրերը:</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {shops.map((shop) => (
-            <ShopCard key={shop.id} shop={shop} />
-          ))}
-        </div>
-      )}
+      <Suspense fallback={<ProductsContentSkeleton />}>
+        <ProductsView shops={shops} districts={districts} />
+      </Suspense>
     </Container>
   );
 }

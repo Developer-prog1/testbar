@@ -6,7 +6,7 @@ import {
   readJson,
   requireBarber,
 } from "@/lib/auth/api";
-import { isRangeFree } from "@/lib/data/availability";
+import { getRangeConflictReason } from "@/lib/data/availability";
 import { selfBookingSchema } from "@/lib/validation";
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -16,9 +16,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     if (!parsed.success) throw new ApiError(422, "validation_failed");
 
     const { startsAt, durationMinutes, clientName, clientPhone } = parsed.data;
-    if (!(await isRangeFree(barberId, startsAt, durationMinutes))) {
-      throw new ApiError(409, "slot_taken");
-    }
+    const conflict = await getRangeConflictReason(
+      barberId,
+      startsAt,
+      durationMinutes,
+      { requireWorkingHours: false },
+    );
+    if (conflict) throw new ApiError(409, conflict);
 
     const booking = await prisma.booking.create({
       data: {

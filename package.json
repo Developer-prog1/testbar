@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -12,6 +12,8 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "db:admin": "tsx prisma/ensure-admin.ts",
+    "db:hero": "tsx prisma/ensure-hero.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

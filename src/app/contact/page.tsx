@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Կապվիր մեզ հետ հարցերի և համագործակցության համար:",
 };
 
+export const dynamic = "force-static";
+
 const INFO = [
   { label: "Հասցե", value: "Աբովյան 12, Երևան" },
   { label: "Հեռախոս", value: "+374 10 000 000" },

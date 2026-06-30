@@ -1,20 +1,47 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
-import { SITE_TAGLINE } from "@/lib/constants";
+import { cn } from "@/lib/cn";
+import {
+  HERO_ROTATE_INTERVAL_MS,
+  SITE_TAGLINE,
+} from "@/lib/constants";
 
-export function Hero() {
+interface HeroProps {
+  readonly images: readonly string[];
+}
+
+export function Hero({ images }: HeroProps) {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    if (images.length < 2) return;
+    const timer = setInterval(() => {
+      setActive((index) => (index + 1) % images.length);
+    }, HERO_ROTATE_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
   return (
     <section className="relative isolate overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <Image
-          src="https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=1920&h=1080&q=80"
-          alt="Barber shop"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover"
-        />
+        {images.map((src, index) => (
+          <Image
+            key={`${src}-${index}`}
+            src={src}
+            alt="Barber shop"
+            fill
+            priority={index === 0}
+            sizes="100vw"
+            className={cn(
+              "object-cover transition-opacity duration-1000",
+              index === active ? "opacity-100" : "opacity-0",
+            )}
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/40" />
       </div>
 
@@ -37,6 +64,25 @@ export function Hero() {
             Կապ հաստատել
           </Button>
         </div>
+
+        {images.length > 1 ? (
+          <div className="flex gap-2" role="tablist" aria-label="Hero carousel">
+            {images.map((src, index) => (
+              <button
+                key={`dot-${src}-${index}`}
+                type="button"
+                role="tab"
+                aria-selected={index === active}
+                aria-label={`Նկար ${index + 1}`}
+                onClick={() => setActive(index)}
+                className={cn(
+                  "h-1.5 rounded-full transition-all",
+                  index === active ? "w-8 bg-gold" : "w-4 bg-cream/40",
+                )}
+              />
+            ))}
+          </div>
+        ) : null}
       </Container>
     </section>
   );

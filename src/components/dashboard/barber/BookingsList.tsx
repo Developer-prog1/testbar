@@ -1,23 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { DeleteRowButton } from "@/components/admin/DeleteRowButton";
 import { Button } from "@/components/ui/Button";
 import { formatDateTime } from "@/lib/datetime";
 import { formatDuration } from "@/lib/services";
 import { SERVICE_LABELS } from "@/lib/constants";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
+import { sortBookings, type BookingDto } from "@/lib/dashboard/bookings";
 import { cn } from "@/lib/cn";
-import type { ServiceType } from "@/lib/types";
 
-export interface BookingDto {
-  readonly id: string;
-  readonly startsAt: string;
-  readonly durationMinutes: number;
-  readonly clientName: string;
-  readonly clientPhone: string;
-  readonly services: ServiceType[];
-  readonly status: "pending" | "accepted" | "rejected";
-  readonly createdByBarber: boolean;
-}
+export type { BookingDto } from "@/lib/dashboard/bookings";
 
 const STATUS_LABEL: Record<BookingDto["status"], string> = {
   pending: "Սպասում է",
@@ -31,16 +23,38 @@ const STATUS_STYLE: Record<BookingDto["status"], string> = {
   rejected: "bg-red-500/15 text-red-400",
 };
 
-export function BookingsList({ bookings }: { readonly bookings: readonly BookingDto[] }) {
-  const router = useRouter();
+interface BookingsListProps {
+  readonly bookings: readonly BookingDto[];
+  readonly onBookingsChange?: (bookings: readonly BookingDto[]) => void;
+}
 
-  const setStatus = async (id: string, status: "accepted" | "rejected") => {
-    const res = await fetch(`/api/dashboard/bookings/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+export function BookingsList({ bookings, onBookingsChange }: BookingsListProps) {
+  const { run, isPending } = useDashboardAction();
+
+  const setStatus = (id: string, status: "accepted" | "rejected") => {
+    const previous = bookings;
+    onBookingsChange?.(
+      sortBookings(
+        bookings.map((booking) =>
+          booking.id === id ? { ...booking, status } : booking,
+        ),
+      ),
+    );
+
+    void run(`status-${id}-${status}`, {
+      action: async () =>
+        fetch(`/api/dashboard/bookings/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        }),
+      isSuccess: (response) => response.ok,
+      onError: () => onBookingsChange?.(previous),
     });
-    if (res.ok) router.refresh();
+  };
+
+  const removeBooking = (id: string) => {
+    onBookingsChange?.(bookings.filter((booking) => booking.id !== id));
   };
 
   if (bookings.length === 0) {
@@ -73,21 +87,37 @@ export function BookingsList({ bookings }: { readonly bookings: readonly Booking
             <p className="text-xs text-muted">
               {booking.clientPhone}
               {booking.services.length > 0
-                ? ` · ${booking.services.map((s) => SERVICE_LABELS[s]).join(", ")}`
+                ? ` · ${booking.services.map((service) => SERVICE_LABELS[service]).join(", ")}`
                 : ""}
             </p>
           </div>
 
-          {booking.status === "pending" ? (
-            <div className="flex shrink-0 gap-2">
-              <Button onClick={() => setStatus(booking.id, "accepted")}>
-                Ընդունել
-              </Button>
-              <Button variant="ghost" onClick={() => setStatus(booking.id, "rejected")}>
-                Մերժել
-              </Button>
-            </div>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-2">
+            {booking.status === "pending" ? (
+              <>
+                <Button
+                  loading={isPending(`status-${booking.id}-accepted`)}
+                  loadingLabel="..."
+                  onClick={() => setStatus(booking.id, "accepted")}
+                >
+                  Ընդունել
+                </Button>
+                <Button
+                  variant="ghost"
+                  loading={isPending(`status-${booking.id}-rejected`)}
+                  loadingLabel="..."
+                  onClick={() => setStatus(booking.id, "rejected")}
+                >
+                  Մերժել
+                </Button>
+              </>
+            ) : null}
+            <DeleteRowButton
+              endpoint={`/api/dashboard/bookings/${booking.id}`}
+              label={booking.clientName}
+              onChanged={() => removeBooking(booking.id)}
+            />
+          </div>
         </li>
       ))}
     </ul>

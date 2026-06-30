@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
 
 export interface MembershipInfo {
   readonly id: string;
@@ -29,66 +29,106 @@ const STATUS_LABEL: Record<MembershipInfo["status"], string> = {
 };
 
 export function ShopJoin({ memberships, shops }: ShopJoinProps) {
-  const router = useRouter();
+  const { run, isPending } = useDashboardAction();
+  const [items, setItems] = useState(memberships);
   const [shopId, setShopId] = useState("");
 
-  const request = async () => {
+  useEffect(() => {
+    setItems(memberships);
+  }, [memberships]);
+
+  const request = () => {
     if (!shopId) return;
-    const res = await fetch("/api/dashboard/memberships", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "request", shopId }),
+    const selectedShop = shops.find((shop) => shop.id === shopId);
+    if (!selectedShop) return;
+
+    void run(`request-${shopId}`, {
+      action: async () =>
+        fetch("/api/dashboard/memberships", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "request", shopId }),
+        }),
+      isSuccess: (response) => response.ok,
+      onSuccess: () => {
+        setShopId("");
+      },
+      refresh: true,
     });
-    if (res.ok) {
-      setShopId("");
-      router.refresh();
-    }
   };
 
-  const leave = async (id: string) => {
-    const res = await fetch(`/api/dashboard/memberships/${id}`, {
-      method: "DELETE",
+  const leave = (id: string) => {
+    const previous = items;
+    setItems((current) => current.filter((item) => item.id !== id));
+
+    void run(`leave-${id}`, {
+      action: async () =>
+        fetch(`/api/dashboard/memberships/${id}`, { method: "DELETE" }),
+      isSuccess: (response) => response.ok,
+      onError: () => setItems(previous),
     });
-    if (res.ok) router.refresh();
   };
 
-  const confirm = async (id: string) => {
-    const res = await fetch(`/api/dashboard/memberships/${id}`, {
-      method: "PATCH",
+  const confirm = (id: string) => {
+    const previous = items;
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, status: "confirmed" as const } : item,
+      ),
+    );
+
+    void run(`confirm-${id}`, {
+      action: async () =>
+        fetch(`/api/dashboard/memberships/${id}`, { method: "PATCH" }),
+      isSuccess: (response) => response.ok,
+      onError: () => setItems(previous),
     });
-    if (res.ok) router.refresh();
   };
 
-  const joinedIds = new Set(memberships.map((m) => m.shopName));
-  const available = shops.filter((s) => !joinedIds.has(s.name));
+  const joinedNames = new Set(items.map((item) => item.shopName));
+  const available = shops.filter((shop) => !joinedNames.has(shop.name));
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        {memberships.length === 0 ? (
+        {items.length === 0 ? (
           <p className="text-sm text-muted">Դեռ կապված չես խանութի հետ:</p>
         ) : (
-          memberships.map((m) => (
+          items.map((membership) => (
             <div
-              key={m.id}
+              key={membership.id}
               className="flex items-center justify-between gap-3 rounded-xl border border-line bg-ink-soft p-3"
             >
               <div>
-                <p className="text-sm text-cream">{m.shopName}</p>
+                <p className="text-sm text-cream">{membership.shopName}</p>
                 <p
                   className={cn(
                     "text-xs",
-                    m.status === "confirmed" ? "text-green-400" : "text-gold",
+                    membership.status === "confirmed"
+                      ? "text-green-400"
+                      : "text-gold",
                   )}
                 >
-                  {STATUS_LABEL[m.status]}
+                  {STATUS_LABEL[membership.status]}
                 </p>
               </div>
               <div className="flex gap-2">
-                {m.status === "pending" && m.initiatedBy === "owner" ? (
-                  <Button onClick={() => confirm(m.id)}>Հաստատել</Button>
+                {membership.status === "pending" &&
+                membership.initiatedBy === "owner" ? (
+                  <Button
+                    loading={isPending(`confirm-${membership.id}`)}
+                    loadingLabel="..."
+                    onClick={() => confirm(membership.id)}
+                  >
+                    Հաստատել
+                  </Button>
                 ) : null}
-                <Button variant="ghost" onClick={() => leave(m.id)}>
+                <Button
+                  variant="ghost"
+                  loading={isPending(`leave-${membership.id}`)}
+                  loadingLabel="..."
+                  onClick={() => leave(membership.id)}
+                >
                   Հեռանալ
                 </Button>
               </div>
@@ -113,7 +153,12 @@ export function ShopJoin({ memberships, shops }: ShopJoinProps) {
             ))}
           </select>
         </label>
-        <Button onClick={request} disabled={!shopId}>
+        <Button
+          onClick={request}
+          disabled={!shopId}
+          loading={Boolean(shopId && isPending(`request-${shopId}`))}
+          loadingLabel="Ուղարկվում է..."
+        >
           Հայտ ուղարկել
         </Button>
       </div>

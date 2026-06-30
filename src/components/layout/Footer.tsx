@@ -17,9 +17,9 @@ export function Footer() {
 
         <nav className="flex flex-col gap-2 text-sm text-muted">
           <span className="mb-1 font-medium text-cream">Նավիգացիա</span>
-          <Link href="/" className="hover:text-gold">Գլխավոր</Link>
-          <Link href="/products" className="hover:text-gold">Խանութներ</Link>
-          <Link href="/contact" className="hover:text-gold">Կապ</Link>
+          <Link href="/" prefetch className="hover:text-gold">Գլխավոր</Link>
+          <Link href="/products" prefetch className="hover:text-gold">Խանութներ</Link>
+          <Link href="/contact" prefetch className="hover:text-gold">Կապ</Link>
         </nav>
 
         <div className="flex flex-col gap-2 text-sm text-muted">

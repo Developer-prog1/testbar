@@ -24,6 +24,8 @@ interface CommonProps {
   readonly size?: Size;
   readonly className?: string;
   readonly children: ReactNode;
+  readonly loading?: boolean;
+  readonly loadingLabel?: string;
 }
 
 type ButtonAsButton = CommonProps &
@@ -36,22 +38,30 @@ type ButtonAsLink = CommonProps & {
 };
 
 export function Button(props: ButtonAsButton | ButtonAsLink) {
-  const { variant = "primary", size = "md", className, children } = props;
+  const {
+    variant = "primary",
+    size = "md",
+    className,
+    children,
+    loading = false,
+    loadingLabel,
+  } = props;
   const classes = cn(BASE, VARIANTS[variant], SIZES[size], className);
+  const label = loading ? (loadingLabel ?? children) : children;
 
   if ("href" in props && props.href) {
     return (
-      <Link href={props.href} className={classes}>
-        {children}
+      <Link href={props.href} prefetch className={classes}>
+        {label}
       </Link>
     );
   }
 
-  const { variant: _v, size: _s, className: _c, children: _ch, ...rest } =
+  const { variant: _v, size: _s, className: _c, children: _ch, loading: _l, loadingLabel: _ll, ...rest } =
     props as ButtonAsButton;
   return (
-    <button className={classes} {...rest}>
-      {children}
+    <button className={classes} disabled={rest.disabled || loading} {...rest}>
+      {label}
     </button>
   );
 }

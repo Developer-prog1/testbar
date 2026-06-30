@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { Sidebar, type NavItem } from "@/components/dashboard/Sidebar";
 import { LogoutButton } from "@/components/dashboard/LogoutButton";

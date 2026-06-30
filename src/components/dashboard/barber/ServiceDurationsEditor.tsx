@@ -1,33 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { SERVICE_LABELS } from "@/lib/constants";
+import { useDashboardAction } from "@/hooks/use-dashboard-action";
 import type { ServiceType } from "@/lib/types";
+
+const SAVE_KEY = "service-durations";
 
 export function ServiceDurationsEditor({
   initial,
 }: {
   readonly initial: Record<ServiceType, number>;
 }) {
-  const router = useRouter();
+  const { run, isPending } = useDashboardAction();
   const [durations, setDurations] = useState(initial);
-  const [saving, setSaving] = useState(false);
 
   const entries = Object.entries(durations) as [ServiceType, number][];
 
-  const save = async () => {
-    setSaving(true);
-    await fetch("/api/dashboard/service-durations", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        entries.map(([service, minutes]) => ({ service, minutes })),
-      ),
+  const save = () => {
+    void run(SAVE_KEY, {
+      action: async () =>
+        fetch("/api/dashboard/service-durations", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            entries.map(([service, minutes]) => ({ service, minutes })),
+          ),
+        }),
+      isSuccess: (response) => response.ok,
     });
-    setSaving(false);
-    router.refresh();
   };
 
   return (
@@ -58,8 +60,12 @@ export function ServiceDurationsEditor({
         </label>
       ))}
       <div>
-        <Button onClick={save} disabled={saving}>
-          {saving ? "Պահպանում..." : "Պահպանել տևողությունները"}
+        <Button
+          onClick={save}
+          loading={isPending(SAVE_KEY)}
+          loadingLabel="Պահպանում..."
+        >
+          Պահպանել տևողությունները
         </Button>
       </div>
     </div>

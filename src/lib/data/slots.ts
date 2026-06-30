@@ -23,13 +23,14 @@ const overlaps = (
 ): boolean =>
   intervals.some((slot) => startMs < slot.endMs && endMs > slot.startMs);
 
-/** Base 30-min slots within working hours, flagged by existing bookings. */
+/** Base 30-min slots within working hours, flagged by bookings and time blocks. */
 export const buildDaySlots = (
   barberId: string,
   date: string,
   startMinute: number,
   endMinute: number,
-  intervals: readonly BookingInterval[],
+  bookingIntervals: readonly BookingInterval[],
+  blockIntervals: readonly BookingInterval[] = [],
 ): readonly TimeSlot[] => {
   const dayStart = parseDayStart(date);
   const slots: TimeSlot[] = [];
@@ -44,7 +45,11 @@ export const buildDaySlots = (
     const iso = start.toISOString();
     const startMs = start.getTime();
     const endMs = startMs + SLOT_DURATION_MINUTES * MS_PER_MINUTE;
-    const status = overlaps(startMs, endMs, intervals) ? "booked" : "available";
+    const status = overlaps(startMs, endMs, bookingIntervals)
+      ? "booked"
+      : overlaps(startMs, endMs, blockIntervals)
+        ? "blocked"
+        : "available";
     slots.push({ id: buildSlotId(barberId, iso), barberId, startsAt: iso, status });
   }
 
