@@ -3,8 +3,7 @@ import { Hero } from "@/components/home/Hero";
 import { ShopGallery } from "@/components/home/ShopGallery";
 import { getCachedHeroImages, getCachedShopsAll } from "@/lib/data/cached-queries";
 
-export const dynamic = "force-static";
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [images, shops] = await Promise.all([

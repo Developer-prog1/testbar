@@ -11,8 +11,7 @@ export const metadata: Metadata = {
   description: "Ընտրիր barber shop-ը ֆիլտրերով՝ ըստ թաղամասի և ծառայության:",
 };
 
-export const dynamic = "force-static";
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
   const [shops, districts] = await Promise.all([
